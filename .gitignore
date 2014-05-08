@@ -1,0 +1,6 @@
+#Ignore log files
+*.log
+#Ignore txt files
+*.txt
+#Ignore git and git.pub
+git*
