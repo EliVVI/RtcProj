@@ -1,0 +1,35 @@
+<html>
+	<head>
+		<title>WebRTCTest</title>
+		<script type="text/javascript" src="./adapter.js"></script>
+		<script>			
+			var rtcConfig = {
+				iceServers : [
+					{url : "stun:stun.l.google.com:19302"},
+					{url : "stun:stun1.l.google.com:19302"},
+					{url : "stun:stun2.l.google.com:19302"},
+					{url : "stun:stun3.l.google.com:19302"},
+					{url : "stun:stun4.l.google.com:19302"}
+				]
+			};
+			var peerConnection = new RTCPeerConnection(rtcConfig);
+			
+			console.log(peerConnection);
+			
+			peerConnection.createOffer(createOfferCalback,createOfferCalbackError);
+			
+			
+			function createOfferCalback(offerSDP){
+				peerConnection.setLocalDescription(offerSDP, function(){console.log(peerConnection.localDescription);}, function(){console.log("set local description error");});
+				console.log("offer sdp", offerSDP.sdp);
+				console.log("offer type", offerSDP.type);
+			}
+			
+			function createOfferCalbackError(){
+				console.log("Couldn't create offer");
+			}
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
