@@ -4,7 +4,9 @@ var fs = require("fs");
 var socketio = require("socket.io");
 var serverRoot = "D:/webRtcProj";
 var defaultFile = "index.html";
+var __clientsID = [];
 
+//Список поддерживаемых mime-типов
 var mimes = {
 	js : "appication/javascript",
 	html : "text/html",
@@ -15,6 +17,13 @@ var mimes = {
 	jpg : "image/jpg",
 }
 
+//Совместно с временем используются для генерации уникального id клиента
+var symbols = [
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+]
+
+//Выделяем mime а заоднопроверяем. поддерживаем его или нет
 function checkMime(path, mimesSupported){
 	var lastIndex = path.lastIndexOf(".");
 	var mime = path.substring(lastIndex + 1, path.length);
@@ -25,6 +34,7 @@ function checkMime(path, mimesSupported){
 	}
 }
 
+//Преобразуем путь, раскрывая . и ..
 function combinePath(path){
 	if(path === "/")
 		return "/";
@@ -51,6 +61,17 @@ function combinePath(path){
 	return path;
 }
 
+//Генератор уникального идентификатора клиента
+function generateClientID(){
+	var time = new Date().getTime();
+	var randomString = "";
+	for(var i = 0; i < 10; i++){
+		randomString += symbols[Math.floor(Math.random( ) * (52 + 1))];
+	}
+	return (time + randomString);
+}
+
+//Создаём сервер
 var server = http.createServer(function(request,response){
 	var path = url.parse(request.url).pathname;
 	
@@ -110,17 +131,18 @@ server.listen(8888);
 var io = socketio.listen(server);
 
 io.sockets.on("connection", function(client){
+	//Генерируем идентификатор клиента
+	var clientId = generateClientID();
+	__clientsID.push(clientId);
+	//Клиент подсоединился
 	console.log("IO connection");
-	client.emit('handshake', {message : "Connection established"});
+	//Посылаем уведомление об успешном подсоединении
+	client.emit('handshake', {message : "Connection established", id : clientId});
+	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
 		var messageParsed = JSON.parse(message);
 		console.log(messageParsed.sdp);
 	});
-});
-
-io.sockets.on("takeSDP", function(socket){
-	console.log("IO connection");
-	socket.emit('handshake', {message : "Connection established"});
 });
 
 console.log("Node server is running.");
