@@ -109,9 +109,18 @@ server.listen(8888);
 
 var io = socketio.listen(server);
 
-io.sockets.on("connection", function(socket){
+io.sockets.on("connection", function(client){
 	console.log("IO connection");
-	socket.emit('handshake',{message : "Connection established"});
+	client.emit('handshake', {message : "Connection established"});
+	client.on('takeSDP', function(message){
+		var messageParsed = JSON.parse(message);
+		console.log(messageParsed.sdp);
+	});
+});
+
+io.sockets.on("takeSDP", function(socket){
+	console.log("IO connection");
+	socket.emit('handshake', {message : "Connection established"});
 });
 
 console.log("Node server is running.");

@@ -15,8 +15,8 @@
 			});
 			
 			//Отправляем SDP через сокет соединение
-			function sendSdpOthers(peerConnection){
-				socket.emit("takeSDP", JSON.stringnify({"sdp" : peerConnection.localDescription}));
+			function sendSdpOthers(socket, peerConnection){
+				socket.emit("takeSDP", JSON.stringify({"sdp" : peerConnection.localDescription}));
 			}
 			
 			//Список ICE серверов
@@ -47,8 +47,10 @@
 					console.log(peerConnection.localDescription);
 					
 					//А вот здесь отправляем другому браузеру наши настройки
-					sendSdpOthers(peerConnection);
-				}, function(){console.log("set local description error");});
+					sendSdpOthers(socket, peerConnection);
+				}, function(){
+					console.log("set local description error");
+				});
 			}
 			
 			function createOfferCalbackError(){
