@@ -1,0 +1,62 @@
+<html>
+	<head>
+		<title>WebRTCTest</title>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+		<script type="text/javascript" src="/adapter.js"></script>
+		<script type="text/javascript" src="http://localhost:8888/socket.io/lib/socket.io.js"></script>
+		<script>
+			//Открываем сокет соединение
+			var socket = io.connect("http://127.0.0.1:8888");
+			
+			//Обработчик на событие установленного соединения
+			socket.on('handshake', function(data){
+				console.log(data.message);
+			});
+			
+			//Отправляем SDP через сокет соединение
+			function sendSdpOthers(peerConnection){
+				socket.emit("takeSDP", JSON.stringnify({"sdp" : peerConnection.localDescription}));
+			}
+			
+			//Список ICE серверов
+			var rtcConfig = {
+				iceServers : [
+					{url : "stun:stun.l.google.com:19302"},
+					{url : "stun:stun1.l.google.com:19302"},
+					{url : "stun:stun2.l.google.com:19302"},
+					{url : "stun:stun3.l.google.com:19302"},
+					{url : "stun:stun4.l.google.com:19302"}
+				]
+			};
+			
+			//Создали RTCPeerConnection объект
+			var peerConnection = new RTCPeerConnection(rtcConfig);
+			
+			console.log("create peerConnection");
+			console.log(peerConnection);
+			
+			//Отправляем оффер
+			peerConnection.createOffer(createOfferCalback,createOfferCalbackError);
+			
+			//Колбэк на отправку оффера
+			function createOfferCalback(offerSDP){
+				//Сначала устанавливаем локальные настройки канала
+				peerConnection.setLocalDescription(offerSDP, function(){
+					console.log("create offer and set local desciption");
+					console.log(peerConnection.localDescription);
+					
+					//А вот здесь отправляем другому браузеру наши настройки
+					sendSdpOthers(peerConnection);
+				}, function(){console.log("set local description error");});
+			}
+			
+			function createOfferCalbackError(){
+				console.log("Couldn't create offer");
+			}
+		</script>
+	</head>
+	<body>
+		index page
+	</body>
+</html>
