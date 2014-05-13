@@ -13,9 +13,11 @@
 			//Обработчик на событие установленного соединения
 			socket.on('handshake', function(data){
 				//Устанавливаем идентификатор клиента
-				__clientID = data.id;
+				if(__clientID === "")
+					__clientID = data.id;
 				
-				console.log(data.message);
+				console.log(data);
+				console.log(__clientID);
 			});
 			
 			//Отправляем SDP через сокет соединение

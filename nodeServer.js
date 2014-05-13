@@ -4,7 +4,7 @@ var fs = require("fs");
 var socketio = require("socket.io");
 var serverRoot = "D:/webRtcProj";
 var defaultFile = "index.html";
-var __clientsID = [];
+var __clientsSessions = {};
 
 //Список поддерживаемых mime-типов
 var mimes = {
@@ -17,13 +17,42 @@ var mimes = {
 	jpg : "image/jpg",
 }
 
-//Совместно с временем используются для генерации уникального id клиента
-var symbols = [
-	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-	"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
-]
+function S4(){
+	return (((1 + Math.random()) * 0x10000)|0).toString(16).substring(1);
+}
 
-//Выделяем mime а заоднопроверяем. поддерживаем его или нет
+//Генератор уникального id
+function guid() {
+   return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+}
+
+//Генерация уникального SESSID
+function() generateSessid{
+	var pool = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+	var newId = "";
+	for(var i = 0; i < 26; i++){
+		var r = Math.floor(Math.random() * pool.length);
+		newId += pool.charAt(r);
+	}
+	return newId;
+}
+
+//Управление куками
+//Передаётся объект request
+function initCookie(request){
+	var cookie = {};
+	if(request.headers.cookie){
+		var cookies = request.headers.cookie.split(";");
+		var cookiesArrayCounter = cookies.length;
+		for(var i = 0; i < cookiesArrayCounter; i++){
+			var pair = cookies[i].split("=");
+			cookie[pair[0]] = pair[1];
+		}
+	}
+	return cookie;
+}
+
+//Выделяем mime а заоднопроверяем, поддерживаем его или нет
 function checkMime(path, mimesSupported){
 	var lastIndex = path.lastIndexOf(".");
 	var mime = path.substring(lastIndex + 1, path.length);
@@ -61,18 +90,8 @@ function combinePath(path){
 	return path;
 }
 
-//Генератор уникального идентификатора клиента
-function generateClientID(){
-	var time = new Date().getTime();
-	var randomString = "";
-	for(var i = 0; i < 10; i++){
-		randomString += symbols[Math.floor(Math.random( ) * (52 + 1))];
-	}
-	return (time + randomString);
-}
-
 //Создаём сервер
-var server = http.createServer(function(request,response){
+var server = http.createServer(function(request, response){
 	var path = url.parse(request.url).pathname;
 	
 	var pathCombined = combinePath(path);
@@ -131,9 +150,11 @@ server.listen(8888);
 var io = socketio.listen(server);
 
 io.sockets.on("connection", function(client){
+	console.log(client);
 	//Генерируем идентификатор клиента
-	var clientId = generateClientID();
+	var clientId = guid();
 	__clientsID.push(clientId);
+	console.log(__clientsID);
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
@@ -141,7 +162,6 @@ io.sockets.on("connection", function(client){
 	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
 		var messageParsed = JSON.parse(message);
-		console.log(messageParsed.sdp);
 	});
 });
 
