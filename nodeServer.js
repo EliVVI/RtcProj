@@ -52,7 +52,7 @@ function initCookie(request){
 	return cookie;
 }
 
-//Выделяем mime а заоднопроверяем, поддерживаем его или нет
+//Выделяем mime а заодно проверяем, поддерживаем его или нет
 function checkMime(path, mimesSupported){
 	var lastIndex = path.lastIndexOf(".");
 	var mime = path.substring(lastIndex + 1, path.length);
