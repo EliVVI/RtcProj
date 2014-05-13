@@ -26,8 +26,8 @@ function guid() {
    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
 }
 
-//Генерация уникального SESSID
-function() generateSessid{
+//Генерация уникального NODESESSID
+function generateNodeSessId(){
 	var pool = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	var newId = "";
 	for(var i = 0; i < 26; i++){
@@ -39,7 +39,7 @@ function() generateSessid{
 
 //Управление куками
 //Передаётся объект request
-function initCookie(request){
+function getUsersCookie(request){
 	var cookie = {};
 	if(request.headers.cookie){
 		var cookies = request.headers.cookie.split(";");
@@ -50,6 +50,22 @@ function initCookie(request){
 		}
 	}
 	return cookie;
+}
+
+//Инициализировать сессию
+function initUserSession(request){
+	var NODESESSID = "";
+	var userCookie = getUserCookie(request);
+	if((typeof userCookie["NODESESSID"]) === "undefined"){
+		NODESESSID = generateNodeSessId();
+		__clientsSessions[NODESESSID] = {};
+	}else{
+		NODESESSID = userCookie["NODESESSID"];
+		if((typeof __clientsSessions[NODESESSID]) === "undefined"){
+			__clientsSessions[NODESESSID] = {};
+		}
+	}
+	return NODESESSID;
 }
 
 //Выделяем mime а заодно проверяем, поддерживаем его или нет
