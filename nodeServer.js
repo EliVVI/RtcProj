@@ -37,9 +37,9 @@ function generateNodeSessId(){
 	return newId;
 }
 
-//Управление куками
+//Извлеч куки.
 //Передаётся объект request
-function getUsersCookie(request){
+function getUserCookie(request){
 	var cookie = {};
 	if(request.headers.cookie){
 		var cookies = request.headers.cookie.split(";");
@@ -50,6 +50,15 @@ function getUsersCookie(request){
 		}
 	}
 	return cookie;
+}
+
+//Создать массив куков для передачи в заголовок
+function makeCookieArray(cookieNameToValueArray){
+	var cookies = [];
+	for(var i in cookieNameToValueArray){
+		cookies.push(i + "=" + cookieNameToValueArray[i]);
+	}
+	return cookies;
 }
 
 //Инициализировать сессию
@@ -66,6 +75,11 @@ function initUserSession(request){
 		}
 	}
 	return NODESESSID;
+}
+
+//Получить объект сессии
+function getUserSessionVariables(nodesessid){
+	return __clientsSessions[nodesessid];
 }
 
 //Выделяем mime а заодно проверяем, поддерживаем его или нет
@@ -109,9 +123,14 @@ function combinePath(path){
 //Создаём сервер
 var server = http.createServer(function(request, response){
 	var path = url.parse(request.url).pathname;
-	
 	var pathCombined = combinePath(path);
-
+	
+	var userSessId = initUserSession(request);
+	var userCookie = getUserCookie(request);
+	userCookie["NODESESSID"] = userSessId;
+	
+	response.setHeader("Set-Cookie", makeCookieArray(userCookie));
+	
 	fs.readFile(serverRoot + pathCombined, function(error, data){
 		if(error !== null){
 			fs.readFile(serverRoot + pathCombined + "/index.html", function(error, data){
@@ -169,8 +188,6 @@ io.sockets.on("connection", function(client){
 	console.log(client);
 	//Генерируем идентификатор клиента
 	var clientId = guid();
-	__clientsID.push(clientId);
-	console.log(__clientsID);
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
