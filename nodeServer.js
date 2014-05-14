@@ -5,6 +5,7 @@ var socketio = require("socket.io");
 var serverRoot = "D:/webRtcProj";
 var defaultFile = "index.html";
 var __clientsSessions = {};
+var currentRequest = "";
 
 //Список поддерживаемых mime-типов
 var mimes = {
@@ -127,7 +128,10 @@ var server = http.createServer(function(request, response){
 	
 	var userSessId = initUserSession(request);
 	var userCookie = getUserCookie(request);
+	
 	userCookie["NODESESSID"] = userSessId;
+	
+	currentRequest = userCookie;
 	
 	response.setHeader("Set-Cookie", makeCookieArray(userCookie));
 	
@@ -185,13 +189,18 @@ server.listen(8888);
 var io = socketio.listen(server);
 
 io.sockets.on("connection", function(client){
-	console.log(client);
 	//Генерируем идентификатор клиента
-	var clientId = guid();
+	var clientCurrentGuid = guid();
+	var clientCurrentNodeId = client.id
+	__clientsSessions[currentRequest["NODESESSID"]]["CLIENTCURRENTGUID"] = clientCurrentGuid;
+	__clientsSessions[currentRequest["NODESESSID"]]["CLIENTCURRENTNODEID"] = clientCurrentNodeId;
+	
+	console.log(__clientsSessions);
+	
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
-	client.emit('handshake', {message : "Connection established", id : clientId});
+	client.emit('handshake', {message : "Connection established", guid : clientCurrentGuid});
 	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
 		var messageParsed = JSON.parse(message);
@@ -199,4 +208,3 @@ io.sockets.on("connection", function(client){
 });
 
 console.log("Node server is running.");
-

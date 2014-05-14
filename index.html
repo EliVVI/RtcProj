@@ -6,6 +6,9 @@
 		<script type="text/javascript" src="/adapter.js"></script>
 		<script type="text/javascript" src="http://localhost:8888/socket.io/lib/socket.io.js"></script>
 		<script>
+			//Пулл RTCPeer соединений 
+			var __webRtcConnectionsPool = {};
+			
 			var __clientID = "";
 			//Открываем сокет соединение
 			var socket = io.connect("http://127.0.0.1:8888");
@@ -14,7 +17,7 @@
 			socket.on('handshake', function(data){
 				//Устанавливаем идентификатор клиента
 				if(__clientID === "")
-					__clientID = data.id;
+					__clientID = data.guid;
 				
 				console.log(data);
 				console.log(__clientID);
