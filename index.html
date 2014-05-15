@@ -18,10 +18,7 @@
 			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
 			var peerConnection = new RTCPeerConnection(rtcConfig);
 			
-			console.log("create peerConnection");
-			console.log(peerConnection);
-			
-			//Пулл RTCPeer соединений 
+			//Пул RTCPeer соединений 
 			var __webRtcConnectionsPool = {};
 			
 			//Текущий ID клиента
@@ -40,21 +37,34 @@
 				console.log(__clientID);
 			});
 			
-			socket.on("takeRemoteSdp", function(data){
-				var data = JSON.parse(data);
+			//При истечении сесии (сейчас это связано только с рестартом сервера),
+			//чтобы не обвалить сервер происходит отключение сокета.
+			socket.on('reconnect', function(){
+				console.log("session is out");
+				console.log("need refersh page");
+				console.log("socket connect disconnection");
+				socket.disconnect();
+			});
+			
+			socket.on("takeRemoteSdp", function(msg){
+				console.log(msg);
+				console.log("hello");
+				/*var msg = SON.parse(msg);
+				var data = JSON.parse(msg.data.sdpdata);
 				if(data.sdp){
 					peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp), function(){
+						console.log("set remote and send answer");
 						if(peerConnection.remoteDescription.type === "offer"){
 							//Получили SDP, значит надо отправить ответ
 							peerConnection.createAnswer(createOfferAnswerCallback, logError);
 						}
 					}, logError);
-				}
+				}*/
 			});
 			
 			//Отправляем SDP через сокет соединение
 			function sendSdpOthers(socket, peerConnection){
-				socket.emit("takeSDP", JSON.stringify({"sdp" : peerConnection.localDescription}));
+				socket.emit("takeSDP", JSON.stringify({"sdpdata" : peerConnection.localDescription}));
 			}
 			
 			//Отправляем оффер

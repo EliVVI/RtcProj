@@ -17,7 +17,6 @@ function maybeFixConfiguration(pcConfig) {
     return;
   }
   for (var i = 0; i < pcConfig.iceServers.length; i++) {
-	console.log(pcConfig.iceServers.length);
     if (pcConfig.iceServers[i].hasOwnProperty('urls')){
 		console.log(pcConfig.iceServers[i].hasOwnProperty('urls'));
 		pcConfig.iceServers[i]['url'] = pcConfig.iceServers[i]['urls'];

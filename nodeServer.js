@@ -130,7 +130,7 @@ var server = http.createServer(function(request, response){
 	var userCookie = getUserCookie(request);
 	
 	userCookie["NODESESSID"] = userSessId;
-	
+	console.log(request);
 	currentRequest = userCookie;
 	
 	response.setHeader("Set-Cookie", makeCookieArray(userCookie));
@@ -192,22 +192,35 @@ io.sockets.on("connection", function(client){
 	//Генерируем идентификатор клиента
 	var clientCurrentGuid = guid();
 	var clientCurrentNodeId = client.id
-	__clientsSessions[currentRequest["NODESESSID"]]["curentguid"] = clientCurrentGuid;
-	__clientsSessions[currentRequest["NODESESSID"]]["curentnodeid"] = clientCurrentNodeId;
 	
-	console.log(__clientsSessions);
-
+	//Так как сессии хранятся в глобальном объекте, то при рестарте сервера они теряются.
+	//Клиент продолжает посылать запросы через сокет но это идет в обход сервера
+	//Т.к сесия приэтом заново не создаётся (она создаётся только сервером), то код
+	//__clientsSessions[currentRequest["NODESESSID"]]["curentguid"] = clientCurrentGuid; генерирует ошибку
+	//Мы пытаемся присвоить значение несуществующему объекту
+	if(currentRequest !== "" && __clientsSessions[currentRequest["NODESESSID"]] !== "undefined"){
+		__clientsSessions[currentRequest["NODESESSID"]]["curentguid"] = clientCurrentGuid;
+		__clientsSessions[currentRequest["NODESESSID"]]["curentnodeid"] = clientCurrentNodeId;
+	}else{
+		//В случае потери сесии послать сигнал reconnect
+		//На самом деле реконнекта не будет, для этого надо перезагрузить страницу, мы могли бы это сделать автоматически
+		//Но лучше выдать предупреждение пользователю об истечении сессии, чтобы он сохранил нужные данные
+		client.emit('reconnect', {message : "session is out"})
+	}
+	
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
 	client.emit('handshake', {message : "Connection established", guid : clientCurrentGuid});
 	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
-		//var messageParsed = JSON.parse(message);
+		var messageParsed = JSON.parse(message);
 		//Рассылаем штроковещательный запрос на добавление нашего оффера
 		//Пока рассылается широковещательно, потом надо сделать выборочно по наличию файла
-		message.event = "takeRemoteSdp";
-		client.broadcast.json.send(message);
+		console.log(messageParsed);
+		client.broadcast.json.send({"event" : "takeRemoteSdp", data : message});
+		
+		//client.emit('takeRemoteSdp', {message : "remote", data : message});
 	});
 });
 
