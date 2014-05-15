@@ -192,18 +192,22 @@ io.sockets.on("connection", function(client){
 	//Генерируем идентификатор клиента
 	var clientCurrentGuid = guid();
 	var clientCurrentNodeId = client.id
-	__clientsSessions[currentRequest["NODESESSID"]]["CLIENTCURRENTGUID"] = clientCurrentGuid;
-	__clientsSessions[currentRequest["NODESESSID"]]["CLIENTCURRENTNODEID"] = clientCurrentNodeId;
+	__clientsSessions[currentRequest["NODESESSID"]]["curentguid"] = clientCurrentGuid;
+	__clientsSessions[currentRequest["NODESESSID"]]["curentnodeid"] = clientCurrentNodeId;
 	
 	console.log(__clientsSessions);
-	
+
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
 	client.emit('handshake', {message : "Connection established", guid : clientCurrentGuid});
 	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
-		var messageParsed = JSON.parse(message);
+		//var messageParsed = JSON.parse(message);
+		//Рассылаем штроковещательный запрос на добавление нашего оффера
+		//Пока рассылается широковещательно, потом надо сделать выборочно по наличию файла
+		message.event = "takeRemoteSdp";
+		client.broadcast.json.send(message);
 	});
 });
 

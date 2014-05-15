@@ -4,3 +4,5 @@
 *.txt
 #Ignore git and git.pub
 git*
+#Ignore files folder
+files

@@ -1,15 +1,32 @@
 <html>
 	<head>
 		<title>WebRTCTest</title>
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.3/jquery.min.js"></script>
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 		<script type="text/javascript" src="/adapter.js"></script>
 		<script type="text/javascript" src="http://localhost:8888/socket.io/lib/socket.io.js"></script>
 		<script>
+			//Список ICE серверов
+			var rtcConfig = {
+				iceServers : [
+					{url : "stun:stun.l.google.com:19302"},
+					{url : "stun:stun1.l.google.com:19302"},
+					{url : "stun:stun2.l.google.com:19302"},
+					{url : "stun:stun3.l.google.com:19302"},
+					{url : "stun:stun4.l.google.com:19302"}
+				]
+			};
+			
+			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
+			var peerConnection = new RTCPeerConnection(rtcConfig);
+			
+			console.log("create peerConnection");
+			console.log(peerConnection);
+			
 			//Пулл RTCPeer соединений 
 			var __webRtcConnectionsPool = {};
 			
+			//Текущий ID клиента
 			var __clientID = "";
+			
 			//Открываем сокет соединение
 			var socket = io.connect("http://127.0.0.1:8888");
 			
@@ -23,33 +40,28 @@
 				console.log(__clientID);
 			});
 			
+			socket.on("takeRemoteSdp", function(data){
+				var data = JSON.parse(data);
+				if(data.sdp){
+					peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp), function(){
+						if(peerConnection.remoteDescription.type === "offer"){
+							//Получили SDP, значит надо отправить ответ
+							peerConnection.createAnswer(createOfferAnswerCallback, logError);
+						}
+					}, logError);
+				}
+			});
+			
 			//Отправляем SDP через сокет соединение
 			function sendSdpOthers(socket, peerConnection){
 				socket.emit("takeSDP", JSON.stringify({"sdp" : peerConnection.localDescription}));
 			}
 			
-			//Список ICE серверов
-			var rtcConfig = {
-				iceServers : [
-					{url : "stun:stun.l.google.com:19302"},
-					{url : "stun:stun1.l.google.com:19302"},
-					{url : "stun:stun2.l.google.com:19302"},
-					{url : "stun:stun3.l.google.com:19302"},
-					{url : "stun:stun4.l.google.com:19302"}
-				]
-			};
-			
-			//Создали RTCPeerConnection объект
-			var peerConnection = new RTCPeerConnection(rtcConfig);
-			
-			console.log("create peerConnection");
-			console.log(peerConnection);
-			
 			//Отправляем оффер
-			peerConnection.createOffer(createOfferCalback,createOfferCalbackError);
+			peerConnection.createOffer(createOfferAnswerCallback, logError);
 			
-			//Колбэк на отправку оффера
-			function createOfferCalback(offerSDP){
+			//Колбэк на отправку оффера/ответа
+			function createOfferAnswerCallback(offerSDP){
 				//Сначала устанавливаем локальные настройки канала
 				peerConnection.setLocalDescription(offerSDP, function(){
 					console.log("create offer and set local desciption");
@@ -57,13 +69,11 @@
 					
 					//А вот здесь отправляем другому браузеру наши настройки
 					sendSdpOthers(socket, peerConnection);
-				}, function(){
-					console.log("set local description error");
-				});
+				}, logError);
 			}
 			
-			function createOfferCalbackError(){
-				console.log("Couldn't create offer");
+			function logError(error){
+				console.log(error.name + ": " + error.message);
 			}
 		</script>
 	</head>
