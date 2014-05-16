@@ -211,16 +211,16 @@ io.sockets.on("connection", function(client){
 	//Клиент подсоединился
 	console.log("IO connection");
 	//Посылаем уведомление об успешном подсоединении
-	client.emit('handshake', {message : "Connection established", guid : clientCurrentGuid});
+	client.emit('handshake', {message : "Connection established", clientCurrentNodeId : clientCurrentNodeId});
 	//Обработчик, принимающий SDP
 	client.on('takeSDP', function(message){
 		var messageParsed = JSON.parse(message);
 		//Рассылаем штроковещательный запрос на добавление нашего оффера
 		//Пока рассылается широковещательно, потом надо сделать выборочно по наличию файла
 		console.log(messageParsed);
-		client.broadcast.json.send({"event" : "takeRemoteSdp", data : message});
+		//client.broadcast.json.send({"event" : "takeRemoteSdp", data : message});
 		
-		//client.emit('takeRemoteSdp', {message : "remote", data : message});
+		io.sockets.emit('takeRemoteSdp', {data : message, id : client.id});
 	});
 });
 

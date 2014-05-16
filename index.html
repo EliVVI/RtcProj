@@ -31,10 +31,7 @@
 			socket.on('handshake', function(data){
 				//Устанавливаем идентификатор клиента
 				if(__clientID === "")
-					__clientID = data.guid;
-				
-				console.log(data);
-				console.log(__clientID);
+					__clientID = data.clientCurrentNodeId;
 			});
 			
 			//При истечении сесии (сейчас это связано только с рестартом сервера),
@@ -48,18 +45,24 @@
 			
 			socket.on("takeRemoteSdp", function(msg){
 				console.log(msg);
-				console.log("hello");
-				/*var msg = SON.parse(msg);
-				var data = JSON.parse(msg.data.sdpdata);
-				if(data.sdp){
-					peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp), function(){
-						console.log("set remote and send answer");
-						if(peerConnection.remoteDescription.type === "offer"){
-							//Получили SDP, значит надо отправить ответ
-							peerConnection.createAnswer(createOfferAnswerCallback, logError);
-						}
-					}, logError);
-				}*/
+				var parsedMessage = JSON.parse(msg.data);
+				var sdpData = parsedMessage.sdpdata;
+				console.log(msg.id);
+				console.log(__clientID);
+				console.log(sdpData);
+				if(msg.id !== __clientID){
+					if(sdpData.sdp){
+						peerConnection.setRemoteDescription(new RTCSessionDescription(sdpData), function(){
+							console.log("set remote and send answer");
+							if(peerConnection.remoteDescription.type === "offer"){
+								//Получили SDP, значит надо отправить ответ
+								peerConnection.createAnswer(createOfferAnswerCallback, logError);
+							}
+						}, logError);
+					}
+				}else{
+					console.log("ommiting");
+				}
 			});
 			
 			//Отправляем SDP через сокет соединение
@@ -68,7 +71,7 @@
 			}
 			
 			//Отправляем оффер
-			peerConnection.createOffer(createOfferAnswerCallback, logError);
+			//peerConnection.createOffer(createOfferAnswerCallback, logError);
 			
 			//Колбэк на отправку оффера/ответа
 			function createOfferAnswerCallback(offerSDP){
@@ -83,10 +86,16 @@
 			}
 			
 			function logError(error){
-				console.log(error.name + ": " + error.message);
+				console.log(error);
+				//console.log(error.name + ": " + error.message);
+			}
+			
+			function offer(){
+				peerConnection.createOffer(createOfferAnswerCallback, logError);
 			}
 		</script>
 	</head>
+	<button onclick="offer();">Offer</button>
 	<body>
 		index page
 	</body>
