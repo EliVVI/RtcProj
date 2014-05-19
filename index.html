@@ -27,6 +27,23 @@
 			//Открываем сокет соединение
 			var socket = io.connect("http://127.0.0.1:8888");
 			
+			//Функция заполняет массив __webRtcConnectionsPool
+			function setWebRtcConnectionsPool(offerSDP, type){
+				if(type === "me"){
+					if(__webRtcConnectionsPool.me === undefined)
+						__webRtcConnectionsPool.me = offerSDP;
+				}
+				
+				if(type === "remote"){
+					if(__webRtcConnectionsPool.remote === undefined){
+						__webRtcConnectionsPool.remote = {};
+						__webRtcConnectionsPool.remote[0] = offerSDP;
+					}else{
+						__webRtcConnectionsPool.remote.push = offerSDP
+					}
+				}
+			}
+			
 			//Обработчик на событие установленного соединения
 			socket.on('handshake', function(data){
 				//Устанавливаем идентификатор клиента
@@ -52,7 +69,9 @@
 				console.log(sdpData);
 				if(msg.id !== __clientID){
 					if(sdpData.sdp){
-						peerConnection.setRemoteDescription(new RTCSessionDescription(sdpData), function(){
+						var remoteDescription = new RTCSessionDescription(sdpData);
+						setWebRtcConnectionsPool(remoteDescription, "remote");
+						peerConnection.setRemoteDescription(remoteDescription, function(){
 							console.log("set remote and send answer");
 							if(peerConnection.remoteDescription.type === "offer"){
 								//Получили SDP, значит надо отправить ответ
@@ -75,6 +94,8 @@
 			
 			//Колбэк на отправку оффера/ответа
 			function createOfferAnswerCallback(offerSDP){
+				//Нулевой offerSDP всегда соответствует собственному sdp браузера (надо будет придумать другой ключ массива)
+				setWebRtcConnectionsPool(offerSDP, "me");
 				//Сначала устанавливаем локальные настройки канала
 				peerConnection.setLocalDescription(offerSDP, function(){
 					console.log("create offer and set local desciption");
@@ -87,7 +108,7 @@
 			
 			function logError(error){
 				console.log(error);
-				//console.log(error.name + ": " + error.message);
+				console.log(error.name + ": " + error.message);
 			}
 			
 			function offer(){
