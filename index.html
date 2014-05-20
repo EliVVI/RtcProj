@@ -12,11 +12,37 @@
 					{url : "stun:stun2.l.google.com:19302"},
 					{url : "stun:stun3.l.google.com:19302"},
 					{url : "stun:stun4.l.google.com:19302"}
-				]
+				],
+				optional: [{
+					RtpDataChannels: true
+				}]
 			};
 			
-			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
-			var peerConnection = new RTCPeerConnection(rtcConfig);
+			//Для определения типа браузера
+			var browser = {
+				mozilla: /firefox/i.test(navigator.userAgent),
+				chrome: /chrom(e|ium)/i.test(navigator.userAgent)
+			};
+
+			var channel = "";
+			
+			function setChannelEvents(){
+				channel.onopen = function(){
+					console.log('Channel opened');
+				};
+				channel.onclose = function(){
+					console.log('Channel closed');
+				};
+				channel.onerror = function(err){
+					console.log('Channel error:', err);
+				};
+				channel.onmessage = function(e){
+					console.log('Incoming message:', e.data);
+				};
+			}
+			
+			//Открываем сокет соединение
+			var socket = io.connect("http://127.0.0.1:8888");
 			
 			//Пул RTCPeer соединений 
 			var __webRtcConnectionsPool = {};
@@ -24,40 +50,56 @@
 			//Текущий ID клиента
 			var __clientID = "";
 			
-			//Открываем сокет соединение
-			var socket = io.connect("http://127.0.0.1:8888");
+			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
+			var peerConnection = new RTCPeerConnection(rtcConfig);
+			__webRtcConnectionsPool.connection1 = peerConnection;
 			
-			//Функция заполняет массив __webRtcConnectionsPool
-			function setWebRtcConnectionsPool(offerSDP, type){
-				if(type === "me"){
-					if(__webRtcConnectionsPool.me === undefined)
-						__webRtcConnectionsPool.me = offerSDP;
+			//Обработчики
+			//Отправляем ICE-кандидатов (без этого канал связи не установить)
+			peerConnection.onicecandidate = function(evt) { 
+				if(evt.candidate) {
+					console.log(evt.candidate);
+					//Каждый ICE-кандидат мы будем отправлять другому участнику через сигнальный сервер
+					socket.emit('ice', JSON.stringify(evt.candidate));
 				}
-				
-				if(type === "remote"){
-					if(__webRtcConnectionsPool.remote === undefined){
-						__webRtcConnectionsPool.remote = {};
-						__webRtcConnectionsPool.remote[0] = offerSDP;
-					}else{
-						__webRtcConnectionsPool.remote.push = offerSDP
-					}
-				}
-			}
+			};
+			
+			peerConnection.onconnection = function() {
+				//Пока это срабатывает только в Firefox
+				console.log('Peer connection established');
+			};
+			
+			peerConnection.onclosedconnection = function() {
+				//И это тоже. В Chrome о разрыве соединения придется узнавать другим способом
+				console.log('Peer connection disconnected');
+			};
 			
 			//Обработчик на событие установленного соединения
 			socket.on('handshake', function(data){
 				//Устанавливаем идентификатор клиента
+				//На самом деле при каждой перезагрузке страницы это всё будет меняться
+				//Опозначание клиента основано на использовании куков (фактически реализована самописная сессия)
 				if(__clientID === "")
 					__clientID = data.clientCurrentNodeId;
 			});
 			
+			function openAnswerChannel(){
+				peerConnection.ondatachannel = function(e){
+					console.log("channel established");
+					channel = e.channel;
+					if(browser.mozilla)
+						channel.binaryType = "blob";
+					setChannelEvents();
+				}
+			}
+			
 			//При истечении сесии (сейчас это связано только с рестартом сервера),
 			//чтобы не обвалить сервер происходит отключение сокета.
 			socket.on('reconnect', function(){
-				console.log("session is out");
-				console.log("need refersh page");
-				console.log("socket connect disconnection");
+				console.log("session is expired");
+				console.log("page needs refershing");
 				socket.disconnect();
+				console.log("socket connection has been broken");
 			});
 			
 			socket.on("takeRemoteSdp", function(msg){
@@ -70,7 +112,7 @@
 				if(msg.id !== __clientID){
 					if(sdpData.sdp){
 						var remoteDescription = new RTCSessionDescription(sdpData);
-						setWebRtcConnectionsPool(remoteDescription, "remote");
+						openAnswerChannel();
 						peerConnection.setRemoteDescription(remoteDescription, function(){
 							console.log("set remote and send answer");
 							if(peerConnection.remoteDescription.type === "offer"){
@@ -84,6 +126,20 @@
 				}
 			});
 			
+			socket.on('takeIce', function(msg){
+				console.log("take ice");
+				var ice = JSON.parse(msg.data);
+				if(msg.id !== __clientID){
+					if(ice.candidate){
+						// добавляем пришедший ICE-кандидат
+						peerConnection.addIceCandidate(new RTCIceCandidate(ice));
+					}
+				}else{
+					console.log("ommiting ice");
+				}
+
+			});
+			
 			//Отправляем SDP через сокет соединение
 			function sendSdpOthers(socket, peerConnection){
 				socket.emit("takeSDP", JSON.stringify({"sdpdata" : peerConnection.localDescription}));
@@ -94,8 +150,6 @@
 			
 			//Колбэк на отправку оффера/ответа
 			function createOfferAnswerCallback(offerSDP){
-				//Нулевой offerSDP всегда соответствует собственному sdp браузера (надо будет придумать другой ключ массива)
-				setWebRtcConnectionsPool(offerSDP, "me");
 				//Сначала устанавливаем локальные настройки канала
 				peerConnection.setLocalDescription(offerSDP, function(){
 					console.log("create offer and set local desciption");
@@ -112,11 +166,22 @@
 			}
 			
 			function offer(){
+				channel = peerConnection.createDataChannel("channel1", browser.chrome ? {reliable : false} : {});
+				console.log("channel");
+				setChannelEvents();
+				console.log(channel);
+				if(browser.mozilla)
+					channel.binaryType = "blob";
 				peerConnection.createOffer(createOfferAnswerCallback, logError);
+			}
+			
+			function sendmessage(){
+				channel.send("hello there");
 			}
 		</script>
 	</head>
 	<button onclick="offer();">Offer</button>
+	<button onclick="sendmessage();">sendmessage</button>
 	<body>
 		index page
 	</body>
