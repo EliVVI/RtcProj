@@ -2,8 +2,9 @@ var http = require("http");
 var url = require('url');
 var fs = require("fs");
 var socketio = require("socket.io");
+var readTorrentFile = require("read-torrent");
 var serverRoot = "D:/webRtcProj";
-var defaultFile = "index.html";
+var defaultPage = "index.html";
 var __clientsSessions = {};
 var currentRequest = "";
 

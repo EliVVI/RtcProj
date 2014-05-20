@@ -85,7 +85,7 @@
 			
 			function openAnswerChannel(){
 				peerConnection.ondatachannel = function(e){
-					console.log("channel established");
+					console.log("Channel established");
 					channel = e.channel;
 					if(browser.mozilla)
 						channel.binaryType = "blob";
@@ -183,6 +183,9 @@
 	<button onclick="offer();">Offer</button>
 	<button onclick="sendmessage();">sendmessage</button>
 	<body>
-		index page
+		Файлы<br/>
+		<a id = "file_1">327143-2180x1080.jpg</a><br/>
+		<a id = "file_2">BO2intro_640x480.mpg</a><br/>
+		<a id = "file_3">love_and_ride.mp4</a><br/>
 	</body>
 </html>
