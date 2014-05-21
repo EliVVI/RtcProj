@@ -280,7 +280,6 @@ function aliveUsers(){
 	io.sockets.emit("aliveUsers", JSON.stringify(getUserListCurrentId()));
 }
 
-//Пригодится в дальнейшем для отслеживания дисконнектов
 setInterval(aliveUsers, 10000);
 
 console.log("Node server is running.");
