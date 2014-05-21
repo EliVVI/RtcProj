@@ -139,7 +139,6 @@ var server = http.createServer(function(request, response){
 	var userCookie = getUserCookie(request);
 	
 	userCookie["NODESESSID"] = userSessId;
-	console.log(request);
 	currentRequest = userCookie;
 	
 	response.setHeader("Set-Cookie", makeCookieArray(userCookie));
@@ -228,8 +227,6 @@ io.sockets.on("connection", function(client){
 		var messageParsed = JSON.parse(message);
 		//Рассылаем штроковещательный запрос на добавление нашего оффера
 		//Пока рассылается широковещательно, потом надо сделать выборочно по наличию файла
-		console.log(messageParsed);
-		
 		io.sockets.emit("takeRemoteSdp", {data : message, id : client.id});
 	});
 	
@@ -255,6 +252,19 @@ io.sockets.on("connection", function(client){
 				paramsSdp = __clientsSessions[nodeid]["sdp"];
 		}
 		io.sockets.emit("wantToConnect", JSON.stringify({clientid : params.remoteId, param : paramsSdp, from : params.me}));
+	});
+	
+	//Дисконнект
+	client.on('disconnect', function(){
+		console.log('client disconnected');
+		var auxArray = [];
+		for(var nodeIds in __clientsSessions){
+			if(__clientsSessions[nodeIds]["curentnodeid"] === client.id){
+				delete __clientsSessions[nodeIds];
+				aliveUsers();
+				break;
+			}
+		}
 	});
 	
 	//Посылаем ответ от ответчика
