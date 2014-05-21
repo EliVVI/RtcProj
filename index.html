@@ -51,10 +51,12 @@
 			var __clientID = "";
 			
 			//Текущий SDP
-			__mySdp = "";
+			var __mySdp = "";
 			
 			//От кого 
-			__from = "";
+			var __from = "";
+			
+			var __userList = "";
 			
 			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
 			var peerConnection = new RTCPeerConnection(rtcConfig);
@@ -95,12 +97,16 @@
 				var users = JSON.parse(msg);
 				var length = users.length;
 				for(var i = 0; i < length; i++){
-					var userRef = "<a href='#' id='" + users[i] + "'>" + users[i] + "</a>";
-					userRefArray.push(userRef);
+					if(users[i] !== __clientID)
+						var userRef = "<a href='#' id='" + users[i] + "'>" + users[i] + "</a>";
+						userRefArray.push(userRef);
+					}
 				}
-				document.getElementById("users").innerHTML = userRefArray.join("<br/>");
+				__userList = userRefArray.join("<br/>");
+				//document.getElementById("users").innerHTML = userRefArray.join("<br/>");
 			});
 			
+			//Открываем канал ответа
 			function openAnswerChannel(){
 				peerConnection.ondatachannel = function(e){
 					console.log("Answer channel established");
@@ -129,6 +135,30 @@
 						peerConnection.addIceCandidate(new RTCIceCandidate(ice));
 					}
 				}
+			});
+			
+			//Добавился новый пользователь
+			socket.on("newUser", function(msg){
+				var message = JSON.parse(msg);
+				if(message !== __clientID){
+					var users = document.getElementById("users");
+					var user = "<a href='#' id='" + message + "'>" + message + "</a><br/>"
+					users.innerHTML += user;
+				}
+			});
+			
+			//Живые пользователи
+			socket.on("aliveUsers", function(msg){
+				var userRefArray = [];
+				var users = JSON.parse(msg);
+				var length = users.length;
+				for(var i = 0; i < length; i++){
+					if(users[i] !== __clientID)
+						var userRef = "<a href='#' id='" + users[i] + "'>" + users[i] + "</a>";
+						userRefArray.push(userRef);
+					}
+				}
+				document.getElementById("users").innerHTML = userRefArray.join("<br/>");
 			});
 			
 			function demandAnswer(answerSDP){
@@ -205,6 +235,10 @@
 			
 			function sendmessage(){
 				channel.send("hello there");
+			}
+			
+			document.onload = function(){
+				document.getElementById('users').innerHTML = __userList;
 			}
 		</script>
 	</head>

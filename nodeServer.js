@@ -215,13 +215,8 @@ io.sockets.on("connection", function(client){
 	//Посылаем уведомление об успешном подсоединении
 	client.emit("handshake", {message : "Connection established", clientCurrentNodeId : clientCurrentNodeId});
 	
-	//Посылаем все идентификаторы подсоединённых клиентов, сключая себя самого.
-	var auxArray = [];
-	for(var nodeIds in __clientsSessions){
-		if(__clientsSessions[nodeIds]["curentnodeid"] !== clientCurrentNodeId)
-			auxArray.push(__clientsSessions[nodeIds]["curentnodeid"]);
-	}
-	client.emit("allUsers", JSON.stringify(auxArray));
+	//Посылаем все идентификаторы подсоединённых клиентов, исключая себя самого.
+	client.emit("allUsers", JSON.stringify(getUserListCurrentId()));
 	
 	//Обработчик, принимающий SDP
 	client.on("takeSDP", function(message){
@@ -262,6 +257,22 @@ io.sockets.on("connection", function(client){
 	client.on("remoteAnswer", function(msg){
 		io.sockets.emit("takeAnswer", msg);
 	});
+	
+	//aliveUsers();
 });
+
+function getUserListCurrentId(){
+	var auxArray = [];
+	for(var nodeIds in __clientsSessions){
+		auxArray.push(__clientsSessions[nodeIds]["curentnodeid"]);
+	}
+	return auxArray;
+}
+
+function aliveUsers(){
+	io.sockets.emit("aliveUsers", JSON.stringify(getUserListCurrentId()));
+}
+
+//setInterval(aliveUsers, 10000);
 
 console.log("Node server is running.");
