@@ -133,9 +133,7 @@
 			
 			function demandAnswer(answerSDP){
 				peerConnection.setLocalDescription(answerSDP, function(){
-					console.log("answer");
-					console.log(answerSDP);
-					console.log("demand create offer and set local desciption");
+					console.log("create offer ondemand and set local desciption");
 					console.log(peerConnection.localDescription);
 					
 					//А вот здесь отправляем другому браузеру наши настройки
@@ -150,7 +148,6 @@
 						var remoteDescription = new RTCSessionDescription(message.localdesc);
 						peerConnection.setRemoteDescription(remoteDescription, function(){
 							console.log("take answer");
-							console.log(remoteDescription);
 						}, logError);
 					}
 				}
@@ -162,10 +159,10 @@
 				if(__clientID === message.clientid){
 					if(message.param){
 						var remoteDescription = new RTCSessionDescription(JSON.parse(message.param));
+						//Открывать канал для ответа должен ТОЛЬКО ответчик!
 						openAnswerChannel();
 						peerConnection.setRemoteDescription(remoteDescription, function(){
-							console.log("set remote and send answer");
-							console.log(remoteDescription);
+							console.log("set remote description and send answer");
 							if(peerConnection.remoteDescription.type === "offer"){
 								__from = message.from;
 								//Получили SDP, значит надо отправить ответ
@@ -180,7 +177,6 @@
 			function createOfferAnswerCallback(offerSDP){
 				//Сохраним на сервере наши настройки WebRTC
 				console.log("save sdp on server");
-				console.log(offerSDP);
 				socket.emit("saveRtcInfo", JSON.stringify(offerSDP));
 				__mySdp = offerSDP;
 			}
@@ -201,9 +197,7 @@
 			function userClick(e, t){
 				var id = e.target.id;
 				peerConnection.setLocalDescription(__mySdp, function(){
-					console.log("set local and send request to connect");
-					console.log("local description");
-					console.log(peerConnection.localDescription);
+					console.log("offerer set local description and send request to connect");
 				}, logError)
 				socket.emit("userToConnect", JSON.stringify({remoteId : id, me : __clientID}));
 			}
