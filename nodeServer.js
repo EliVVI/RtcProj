@@ -2,7 +2,7 @@ var http = require("http");
 var url = require('url');
 var fs = require("fs");
 var socketio = require("socket.io");
-var readTorrentFile = require("read-torrent");
+//var readTorrentFile = require("read-torrent");
 var serverRoot = "D:/webRtcProj";
 var defaultPage = "index.html";
 var __clientsSessions = {};
@@ -196,7 +196,7 @@ io.sockets.on("connection", function(client){
 	
 	//Так как сессии хранятся в глобальном объекте, то при рестарте сервера они теряются.
 	//Клиент продолжает посылать запросы через сокет но это идет в обход сервера
-	//Т.к сесия приэтом заново не создаётся (она создаётся только сервером), то код
+	//Т.к сесия при этом заново не создаётся (она создаётся только сервером), то код
 	//__clientsSessions[currentRequest["NODESESSID"]]["curentguid"] = clientCurrentGuid; генерирует ошибку
 	//Мы пытаемся присвоить значение несуществующему объекту
 	if(currentRequest !== "" && __clientsSessions[currentRequest["NODESESSID"]] !== "undefined"){
@@ -206,30 +206,59 @@ io.sockets.on("connection", function(client){
 		//В случае потери сесии послать сигнал reconnect
 		//На самом деле реконнекта не будет, для этого надо перезагрузить страницу, мы могли бы это сделать автоматически
 		//Но лучше выдать предупреждение пользователю об истечении сессии, чтобы он сохранил нужные данные
-		client.emit('reconnect', {message : "session is out"})
+		client.emit("reconnect", {message : "session is out"})
 	}
 	
 	//Клиент подсоединился
 	console.log("IO connection");
 	
 	//Посылаем уведомление об успешном подсоединении
-	client.emit('handshake', {message : "Connection established", clientCurrentNodeId : clientCurrentNodeId});
+	client.emit("handshake", {message : "Connection established", clientCurrentNodeId : clientCurrentNodeId});
+	
+	//Посылаем все идентификаторы подсоединённых клиентов, сключая себя самого.
+	var auxArray = [];
+	for(var nodeIds in __clientsSessions){
+		if(__clientsSessions[nodeIds]["curentnodeid"] !== clientCurrentNodeId)
+			auxArray.push(__clientsSessions[nodeIds]["curentnodeid"]);
+	}
+	client.emit("allUsers", JSON.stringify(auxArray));
 	
 	//Обработчик, принимающий SDP
-	client.on('takeSDP', function(message){
+	client.on("takeSDP", function(message){
 		var messageParsed = JSON.parse(message);
 		//Рассылаем штроковещательный запрос на добавление нашего оффера
 		//Пока рассылается широковещательно, потом надо сделать выборочно по наличию файла
 		console.log(messageParsed);
-		//client.broadcast.json.send({"event" : "takeRemoteSdp", data : message});
 		
-		io.sockets.emit('takeRemoteSdp', {data : message, id : client.id});
+		io.sockets.emit("takeRemoteSdp", {data : message, id : client.id});
 	});
 	
 	//Обмен ICE-серверами
-	client.on('ice', function(message){
+	client.on("ice", function(message){
 		//Рассылка ICE-серверов
-		io.sockets.emit('takeIce', {data : message, id : client.id});
+		io.sockets.emit("takeIce", {data : message, id : client.id});
+	});
+	
+	//Сохраняем параметры оффера
+	client.on("saveRtcInfo", function(message){
+		var parcedMessage = JSON.parse(message);
+		__clientsSessions[currentRequest["NODESESSID"]]["sdp"] = message;
+		console.log(__clientsSessions);
+	});
+	
+	client.on("userToConnect", function(msg){
+		console.log("wantconnect");
+		var params = JSON.parse(msg);
+		var paramsSdp = "";
+		for(var nodeid in __clientsSessions){
+			if(params.me === __clientsSessions[nodeid]["curentnodeid"])
+				paramsSdp = __clientsSessions[nodeid]["sdp"];
+		}
+		io.sockets.emit("wantToConnect", JSON.stringify({clientid : params.remoteId, param : paramsSdp, from : params.me}));
+	});
+	
+	client.on("remoteAnswer", function(msg){
+		io.sockets.emit("takeAnswer", msg);
 	});
 });
 
