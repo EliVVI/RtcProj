@@ -243,7 +243,6 @@ io.sockets.on("connection", function(client){
 	client.on("saveRtcInfo", function(message){
 		var parcedMessage = JSON.parse(message);
 		__clientsSessions[currentRequest["NODESESSID"]]["sdp"] = message;
-		console.log(__clientsSessions);
 	});
 	
 	//Выбираем с каким пользователем хотим установить связь
