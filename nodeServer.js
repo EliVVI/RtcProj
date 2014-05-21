@@ -39,6 +39,14 @@ function generateNodeSessId(){
 	return newId;
 }
 
+function getUserListCurrentId(){
+	var auxArray = [];
+	for(var nodeIds in __clientsSessions){
+		auxArray.push(__clientsSessions[nodeIds]["curentnodeid"]);
+	}
+	return auxArray;
+}
+
 //Извлеч куки.
 //Передаётся объект request
 function getUserCookie(request){
@@ -215,9 +223,6 @@ io.sockets.on("connection", function(client){
 	//Посылаем уведомление об успешном подсоединении
 	client.emit("handshake", {message : "Connection established", clientCurrentNodeId : clientCurrentNodeId});
 	
-	//Посылаем все идентификаторы подсоединённых клиентов, исключая себя самого.
-	client.emit("allUsers", JSON.stringify(getUserListCurrentId()));
-	
 	//Обработчик, принимающий SDP
 	client.on("takeSDP", function(message){
 		var messageParsed = JSON.parse(message);
@@ -258,21 +263,15 @@ io.sockets.on("connection", function(client){
 		io.sockets.emit("takeAnswer", msg);
 	});
 	
-	//aliveUsers();
+	//Посылаем список пользователей
+	aliveUsers();
 });
-
-function getUserListCurrentId(){
-	var auxArray = [];
-	for(var nodeIds in __clientsSessions){
-		auxArray.push(__clientsSessions[nodeIds]["curentnodeid"]);
-	}
-	return auxArray;
-}
 
 function aliveUsers(){
 	io.sockets.emit("aliveUsers", JSON.stringify(getUserListCurrentId()));
 }
 
-//setInterval(aliveUsers, 10000);
+//Пригодится в дальнейшем для отслеживания дисконнектов
+setInterval(aliveUsers, 10000);
 
 console.log("Node server is running.");

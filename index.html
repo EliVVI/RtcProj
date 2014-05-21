@@ -56,8 +56,6 @@
 			//От кого 
 			var __from = "";
 			
-			var __userList = "";
-			
 			//Создали RTCPeerConnection объект. Данная ф-я - фасад из adapter.js
 			var peerConnection = new RTCPeerConnection(rtcConfig);
 			__webRtcConnectionsPool.connection1 = peerConnection;
@@ -91,21 +89,6 @@
 					__clientID = data.clientCurrentNodeId;
 			});
 			
-			//Принимаем список пользователей
-			socket.on("allUsers", function(msg){
-				var userRefArray = [];
-				var users = JSON.parse(msg);
-				var length = users.length;
-				for(var i = 0; i < length; i++){
-					if(users[i] !== __clientID)
-						var userRef = "<a href='#' id='" + users[i] + "'>" + users[i] + "</a>";
-						userRefArray.push(userRef);
-					}
-				}
-				__userList = userRefArray.join("<br/>");
-				//document.getElementById("users").innerHTML = userRefArray.join("<br/>");
-			});
-			
 			//Открываем канал ответа
 			function openAnswerChannel(){
 				peerConnection.ondatachannel = function(e){
@@ -137,27 +120,18 @@
 				}
 			});
 			
-			//Добавился новый пользователь
-			socket.on("newUser", function(msg){
-				var message = JSON.parse(msg);
-				if(message !== __clientID){
-					var users = document.getElementById("users");
-					var user = "<a href='#' id='" + message + "'>" + message + "</a><br/>"
-					users.innerHTML += user;
-				}
-			});
-			
 			//Живые пользователи
 			socket.on("aliveUsers", function(msg){
 				var userRefArray = [];
 				var users = JSON.parse(msg);
 				var length = users.length;
 				for(var i = 0; i < length; i++){
-					if(users[i] !== __clientID)
+					if(users[i] !== __clientID){
 						var userRef = "<a href='#' id='" + users[i] + "'>" + users[i] + "</a>";
 						userRefArray.push(userRef);
 					}
 				}
+				console.log("alive");
 				document.getElementById("users").innerHTML = userRefArray.join("<br/>");
 			});
 			
@@ -237,9 +211,6 @@
 				channel.send("hello there");
 			}
 			
-			document.onload = function(){
-				document.getElementById('users').innerHTML = __userList;
-			}
 		</script>
 	</head>
 	<button onclick="offer();">Offer</button>
