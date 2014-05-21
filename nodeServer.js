@@ -246,6 +246,7 @@ io.sockets.on("connection", function(client){
 		console.log(__clientsSessions);
 	});
 	
+	//Выбираем с каким пользователем хотим установить связь
 	client.on("userToConnect", function(msg){
 		console.log("wantconnect");
 		var params = JSON.parse(msg);
@@ -257,6 +258,7 @@ io.sockets.on("connection", function(client){
 		io.sockets.emit("wantToConnect", JSON.stringify({clientid : params.remoteId, param : paramsSdp, from : params.me}));
 	});
 	
+	//Посылаем ответ от ответчика
 	client.on("remoteAnswer", function(msg){
 		io.sockets.emit("takeAnswer", msg);
 	});

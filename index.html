@@ -164,6 +164,7 @@
 						peerConnection.setRemoteDescription(remoteDescription, function(){
 							console.log("set remote description and send answer");
 							if(peerConnection.remoteDescription.type === "offer"){
+								//Таким вот костылём сохраняем идентификатор того, от кого пришёл запрос на взаимодействие
 								__from = message.from;
 								//Получили SDP, значит надо отправить ответ
 								peerConnection.createAnswer(demandAnswer, logError);
