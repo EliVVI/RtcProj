@@ -148,7 +148,6 @@
 				if(__clientID === message.to){
 					if(message.localdesc){
 						var remoteDescription = new RTCSessionDescription(message.localdesc);
-						openAnswerChannel();
 						peerConnection.setRemoteDescription(remoteDescription, function(){
 							console.log("take answer");
 							console.log(remoteDescription);
