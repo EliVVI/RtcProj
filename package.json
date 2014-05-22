@@ -1,8 +1,7 @@
 {
-  "name": "eli",
+  "name": "webrtc",
   "version": "0.0.0",
   "description": "WebRtc communication and server to suport it",
-  "main": "index.html",
   "dependencies": {
     "socket.io": "~0.9.16",
     "express": "~4.2.0",
