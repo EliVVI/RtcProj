@@ -1,0 +1,25 @@
+{
+  "name": "eli",
+  "version": "0.0.0",
+  "description": "WebRtc communication and server to suport it",
+  "main": "index.html",
+  "dependencies": {
+    "socket.io": "~0.9.16",
+    "express": "~4.2.0",
+    "read-torrent": "~0.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EliVVI/RtcProj.git"
+  },
+  "author": "VoskoboynikVI",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/EliVVI/RtcProj/issues"
+  },
+  "homepage": "https://github.com/EliVVI/RtcProj"
+}
