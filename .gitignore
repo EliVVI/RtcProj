@@ -2,6 +2,8 @@
 *.log
 #Ignore txt files
 *.txt
+#except
+!README.txt
 #Ignore git and git.pub
 git*
 #Ignore files folder
