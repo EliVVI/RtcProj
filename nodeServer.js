@@ -2,7 +2,7 @@ var http = require("http");
 var url = require('url');
 var fs = require("fs");
 var socketio = require("socket.io");
-//var readTorrentFile = require("read-torrent");
+var readTorrentFile = require("read-torrent");
 var serverRoot = "D:/webRtcProj";
 var defaultPage = "index.html";
 var __clientsSessions = {};
@@ -283,3 +283,20 @@ function aliveUsers(){
 setInterval(aliveUsers, 10000);
 
 console.log("Node server is running.");
+
+readTorrentFile("D:/webRtcProj/files/5006_Arctic_blast.torrent", function(a, data){
+	var fileInfo = {};
+	//Список анонсеров в виде массива
+	fileInfo.announce = data.announce;
+	//Хэш для передачи анонсеру
+	fileInfo.infoHash = data.infoHash;
+	//Размер файла
+	fileInfo.infoHash = data.length;
+	//Список словарей по всем файлам
+	fileInfo.files = data.files;
+	//Длинна одного куска
+	fileInfo.pieceLength = data.pieceLength;
+	//Хэши всех кусков
+	fileInfo.pieces = data.pieces;
+	fs.writeFile("D:/webRtcProj/files/torr.txt", JSON.stringify(data));
+});
