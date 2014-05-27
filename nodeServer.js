@@ -3,6 +3,7 @@ var url = require('url');
 var fs = require("fs");
 var socketio = require("socket.io");
 var readTorrentFile = require("read-torrent");
+var xmlHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var serverRoot = "D:/webRtcProj";
 var defaultPage = "index.html";
 var __clientsSessions = {};
@@ -284,19 +285,79 @@ setInterval(aliveUsers, 10000);
 
 console.log("Node server is running.");
 
-readTorrentFile("D:/webRtcProj/files/5006_Arctic_blast.torrent", function(a, data){
+readTorrentFile("D:/webRtcProj/files/Sahara.torrent", function(a, data){
 	var fileInfo = {};
 	//Список анонсеров в виде массива
 	fileInfo.announce = data.announce;
 	//Хэш для передачи анонсеру
 	fileInfo.infoHash = data.infoHash;
 	//Размер файла
-	fileInfo.infoHash = data.length;
+	fileInfo.length = data.length;
 	//Список словарей по всем файлам
 	fileInfo.files = data.files;
 	//Длинна одного куска
 	fileInfo.pieceLength = data.pieceLength;
 	//Хэши всех кусков
 	fileInfo.pieces = data.pieces;
-	fs.writeFile("D:/webRtcProj/files/torr.txt", JSON.stringify(data));
+	
+	/*fileInfo.announce = [
+		"http://tracker.openbittorrent.com:80/announce",
+		"http://tracker.pubt.net:2710/announce",
+		"http://tracker.publicbt.com:80/announce",
+		"http://tracker.openbittorrent.kg:2710/announce",
+		"http://bt.rutor.org:2710/announce",
+		"http://denis.stalker.h3q.com:6969/announce",
+		"http://tracker.ex.ua:80/announce",
+		"http://retracker.local/announce",
+		"http://torrentszona.com/announce.php?passkey=0123456789abcdef0123456789abcdef"
+	];*/
+	
+	function log(response){
+		console.log(response);
+	}
+	
+	var ajaxPool = [];
+	
+	fs.writeFile("D:/webRtcProj/files/Sahara.txt", JSON.stringify(data));
+	var _url = "http://bt.new-team.org:2710/00000eb618eec0656de22474d35b7d95/announce?" + "info_hash=" + fileInfo.infoHash + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=0&no_peer_id=0&event=started";
+	//var url = "info_hash=" + fileInfo.infoHash + "&peer_id=-UT2000-1234567890AB&port=55505&uploaded=0&downloaded=0&left=0&compact=0&no_peer_id=0&event=started";
+	/*for(var i = 0; i < fileInfo.announce.length; i++){
+		var _url = "";
+		if(fileInfo.announce[0].lastIndexOf("?") != -1){
+			if(fileInfo.announce[0].lastIndexOf("?") < fileInfo.announce[0].length){
+				_url = fileInfo.announce[0] + "&" + url;
+			}else{
+				_url = fileInfo.announce[0] + url;
+			}
+		}else{
+			_url = fileInfo.announce[0] + "?" + url;
+		}
+		console.log(_url);
+		ajaxPool.push(new xmlHttpRequest());
+		ajaxPool[i].open("GET", _url, true);
+		ajaxPool[i].onreadystatechange = function(){
+			log(this.responseText);
+			if(this.readyState == 4){
+				if(this.status == 200){
+					log(this.responseText);
+				}
+			}
+		};
+		ajaxPool[i].send();
+	}*/
+	ajaxPool.push(new xmlHttpRequest());
+	ajaxPool[0].open("GET", _url, true);
+	ajaxPool[0].onreadystatechange = function(){
+		log(this.responseText);
+		if(this.readyState == 4){
+			if(this.status == 200){
+				log(this.responseText);
+			}else{
+				console.log("error");
+			}
+		}
+	};
+	ajaxPool[0].send();
 });
+//http://retracker.local/scrape?info_hash=25728e8593eba3935dfa045547e2dbeac1551371&peer_id=-UT2000-1234567890AB&port=55500&uploaded=0&downloaded=0&left=1468268544&compact=1&no_peer_id=0&event=started
+//http://torrentszona.com/announce.php?passkey=0123456789abcdef0123456789abcdef&info_hash=4ab14eebd68b44f1f3200475138c8fcd0d98ce1a&peer_id=-UT2000-1234567890AB&port=80&uploaded=0&downloaded=0&left=734048256&compact=0&no_peer_id=0&event=started
