@@ -143,6 +143,8 @@ var server = http.createServer(function(request, response){
 	
 	var userSessId = initUserSession(request);
 	var userCookie = getUserCookie(request);
+	//Получаем ip клиента
+	__clientsSessions[userSessId]["ip"] = request.connection.remoteAddress;
 	
 	userCookie["NODESESSID"] = userSessId;
 	currentRequest = userCookie;
@@ -221,7 +223,7 @@ io.sockets.on("connection", function(client){
 		var parcedMessage = JSON.parse(message);
 		__clientsSessions[currentRequest["NODESESSID"]]["sdp"] = message;
 	});
-	
+
 	//Выбираем с каким пользователем хотим установить связь
 	client.on("userToConnect", function(msg){
 		console.log("wantconnect");
