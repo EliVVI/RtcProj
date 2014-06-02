@@ -1,7 +1,8 @@
 var http = require("http");
 var dgram = require('dgram');
 var bncode = require('bncode');
-var compact2string = require('compact2string')
+var compact2string = require('compact2string');
+var concat = require('concat-stream');
 var url = require('url');
 var hat = require('hat');
 var fs = require("fs");
@@ -264,12 +265,36 @@ setInterval(aliveUsers, 10000);
 console.log("Node server is running.");
 
 
+/*function toUnicode(theString) {
+  var unicodeString = '';
+  for (var i=0; i < theString.length; i++) {
+    var theUnicode = theString.charCodeAt(i).toString(16).toUpperCase();
+    while (theUnicode.length < 4) {
+      theUnicode = '0' + theUnicode;
+    }
+    theUnicode = '\\u' + theUnicode;
+    unicodeString += theUnicode;
+  }
+  return unicodeString;
+}
+
+var uni = toUnicode("ABCDEFGHIJKLMN");
+console.log(eval("'" + uni + "'"));*/
+
+//Буква "Е" кириллическая
+//console.log(String.fromCharCode(1045));//Число в десятичной системе. В HTML код подставляется &#1045;
+//console.log("\u0415");//Его hex представление 1045 = 0x415 - это utf-16 представление. Номер в Юникоде U+0415.
+//console.log(encodeURIComponent("Е"));//Даст %D0%95 - представление "Е" в utf-8
+
+
+//%b8  %1f  %2a  %fc  i  %d4  %27  %5e  %13  %14  7  %c7  %0e  %d3  %ff  %5d  %2f  Q  %b7  %a9 Хэш, который создаёт сервер.
+//%b8  %1F   *   %fc  i  %d4   '   %5E  %13  %14  7  %c7  %0E  %d3  %ff  %5D   /   Q  %b7  %a9
 
 
 
-
-
-readTorrentFile("D:/webRtcProj/files/Sahara.torrent", function(a, data){
+//Получаем мтаинформацию о файле.
+readTorrentFile("D:/webRtcProj/files/BO2intro.torrent", function(a, data){
+//readTorrentFile("D:/webRtcProj/files/IMA-Sound.torrent", function(a, data){
 	var fileInfo = {};
 	//Список анонсеров в виде массива
 	fileInfo.announce = data.announce;
@@ -288,10 +313,10 @@ readTorrentFile("D:/webRtcProj/files/Sahara.torrent", function(a, data){
 		console.log(response);
 	}
 	
-	var ajaxPool = [];
 	
-	fs.writeFile("D:/webRtcProj/files/Sahara.txt", JSON.stringify(data));
-	//var url = "info_hash=" + fileInfo.infoHash + "&peer_id=-UT2000-1234567890AB&port=55505&uploaded=0&downloaded=0&left=0&compact=0&no_peer_id=0&event=started";
+	var ajaxPool = [];
+
+	//fs.writeFile("D:/webRtcProj/files/полный песец.jpg.txt", JSON.stringify(data));
 	
 	/*ajaxPool.push(new xmlHttpRequest());
 	ajaxPool[0].open("GET", _url, true);
@@ -308,9 +333,13 @@ readTorrentFile("D:/webRtcProj/files/Sahara.torrent", function(a, data){
 	ajaxPool[0].send();*/
 	
 	for(var i = 0; i < fileInfo.announce.length; i++){
-		var url = fileInfo.announce[i] + "?" + "info_hash=" + encodeURIComponent(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0&event=started";
+		if(fileInfo.announce[i].indexOf("?") !== -1)
+			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0&event=started";
+		else
+			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0&event=started";
+		
 		if(/^udp:/.test(fileInfo.announce[i])){
-			requestUdp(url, fileInfo);
+			//requestUdp(url, fileInfo);
 		}
 		if(/^http:/.test(fileInfo.announce[i])){
 			requestHttp(url, fileInfo);
@@ -322,6 +351,38 @@ readTorrentFile("D:/webRtcProj/files/Sahara.torrent", function(a, data){
 //
 // HELPERS
 //
+
+//Функция преобразования хэша.
+//Все бинарные данные в URL (в особенности info_hash и peer_id) должны быть правильно экранированы.
+//Это означает, что любой байт, который не входит в множества ''0-9'', ''a-z'', ''A-Z'' и ''$-_.+!*'(),'' должен быть закодирован в формате "%nn",
+//где nn — шестнадцатеричное значение байта. (см. RFC 1738 для подробностей).
+//http://netnsk.ru/publica/bittorrent/BitTorrent_11.php
+//Особенности построения правильного хэша сервером:
+//Символы с кодом меньше 127 (ASCII) ДОЛЖНЫ быть представлены своим видом (hex-нотация НЕ ПОДОЙДЁТ), тем не менее символы "*", "'", "/"
+//несмотря на то, что входят в число разрешённых, тоже пришлось кодоровать в hex-нотацию (странное поведение сервера).
+//Символы с кодом больше 127 остаются представленными парой шестнадцатеричных символов с ведущим "%".
+//encodeURI и encodeURIComponent не подходят, так как кодируют в utf-8 и , соответственно символы с кодом больше 127 представляются двумя байтами.
+function infoHashTransform(infohashString){
+	var symbolArray = [];
+	//Хэш - строка в шестнадцатеричном представлении. 40 символов, соответственно - 20 байт.
+	for(var i = 0; i < infohashString.length / 2; i++){
+		//Вычленяем пары символов. Пара - 1 байт.
+		var pair = infohashString.slice(i * 2, i * 2 + 2);
+		//Дополняем до правильной 16-ричного представления
+		var hexCode = "0x" + pair;
+		//Переводим в десятичную систему счисления
+		var decCode = parseInt(hexCode, 16);
+		//Проверяем код символа
+		if(decCode > 127 || String.fromCharCode(decCode) === "*" || String.fromCharCode(decCode) === "'" || String.fromCharCode(decCode) === "/"){
+			symbolArray.push("%" + pair);
+		}else{
+			symbolArray.push(encodeURI(String.fromCharCode(decCode)));
+		}
+	}
+	console.log(symbolArray.join(''));
+	return symbolArray.join('');
+}
+
 
 function toUInt16(n){
 	var buf = new Buffer(2);
@@ -339,8 +400,8 @@ function toUInt64(n){
 	if(typeof bignum === 'function'){
 		return bignum(n).toBuffer({ size: 8 });
 	}else{
-		// optional compiled dependency 'bignum' is not available, so round down to MAX_UINT.
-		// These values are only used for tracker stats anyway.
+		//Optional compiled dependency 'bignum' is not available, so round down to MAX_UINT.
+		//These values are only used for tracker stats anyway.
 		if(n > MAX_UINT){
 			n = MAX_UINT;
 		}
@@ -357,7 +418,6 @@ function bytewiseDecodeURIComponent(str){
 }
 
 
-
 var CONNECTION_ID = Buffer.concat([toUInt32(0x417), toUInt32(0x27101980)]);
 var ACTIONS = {CONNECT: 0, ANNOUNCE: 1, SCRAPE: 2, ERROR: 3};
 var EVENTS = {update: 0, completed: 1, started: 2, stopped: 3};
@@ -365,10 +425,13 @@ var MAX_UINT = 4294967295;
 var REMOVE_IPV6_RE = /^::ffff:/;
 
 
-
 function handleResponse(requestUrl, data){
 	try{
 		data = bncode.decode(data);
+		console.log(data);
+		compact2string.multi(data.peers).forEach(function(addr){
+			console.log('http peer', addr);
+		})
 	}catch(err){
 		console.log( new Error('Error decoding tracker response: ' + err.message));
 	}
@@ -553,7 +616,6 @@ function requestUdp(requestUrl, opts){
 		
 		switch(action){
 			case 0: // handshake
-				console.log("handshake");
 				if(msg.length < 16){
 					return error('invalid udp handshake');
 				}
@@ -567,8 +629,6 @@ function requestUdp(requestUrl, opts){
 				return;
 
 			case 1: // announce
-				console.log("announce");
-				console.log(msg.readUInt32BE(16));
 				cleanup();
 				if(msg.length < 20){
 					return error('invalid announce message');
@@ -593,7 +653,6 @@ function requestUdp(requestUrl, opts){
 				break
 
 			case 2: // scrape
-				console.log("scrape");
 				cleanup();/*
 				if(msg.length < 20){
 					return error('invalid scrape message');
