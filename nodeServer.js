@@ -8,9 +8,8 @@ var hat = require('hat');
 var fs = require("fs");
 var socketio = require("socket.io");
 var readTorrentFile = require("read-torrent");
-var xmlHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+//var xmlHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 var serverRoot = __dirname;
-var defaultPage = "index.html";
 var __clientsSessions = {};
 var currentRequest = "";
 
