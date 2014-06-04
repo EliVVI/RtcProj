@@ -291,9 +291,11 @@ console.log(eval("'" + uni + "'"));*/
 //%b8  %1f  %2a  %fc  i  %d4  %27  %5e  %13  %14  7  %c7  %0e  %d3  %ff  %5d  %2f  Q  %b7  %a9 Хэш, который создаёт сервер.
 //%b8  %1F   *   %fc  i  %d4   '   %5E  %13  %14  7  %c7  %0E  %d3  %ff  %5D   /   Q  %b7  %a9
 
-//Получаем мтаинформацию о файле.
-//readTorrentFile(serverRoot + "/files/ride.torrent", function(a, data){
-readTorrentFile(serverRoot + "/files/IMA-Sound.torrent", function(a, data){
+var torrentFile = serverRoot + "/files/IMA-Sound.torrent";
+//var torrentFile = serverRoot + "/files/ride.torrent";
+
+//Получаем метаинформацию о файле.
+readTorrentFile(torrentFile, function(a, data){
 	var fileInfo = {};
 	//Список анонсеров в виде массива
 	fileInfo.announce = data.announce;
@@ -307,15 +309,24 @@ readTorrentFile(serverRoot + "/files/IMA-Sound.torrent", function(a, data){
 	fileInfo.pieceLength = data.pieceLength;
 	//Хэши всех кусков
 	fileInfo.pieces = data.pieces;
+	//Имя
+	fileInfo.name = data.name;
 	
 	function log(response){
 		console.log(response);
 	}
 	
+	var currentLength = 0;
+	
+	var file = serverRoot + "/files/" + fileInfo.name;
+	
+	currentLength = currentSize(file);
+	
+	console.log(currentLength);
 	
 	var ajaxPool = [];
 
-	//fs.writeFile("D:/webRtcProj/files/полный песец.jpg.txt", JSON.stringify(data));
+	//fs.writeFile("D:/webRtcProj/files/ride.txt", JSON.stringify(data));
 	
 	/*ajaxPool.push(new xmlHttpRequest());
 	ajaxPool[0].open("GET", _url, true);
@@ -350,6 +361,34 @@ readTorrentFile(serverRoot + "/files/IMA-Sound.torrent", function(a, data){
 //
 // HELPERS
 //
+
+
+//Рекурсивная функция для получения текущего объёма загруженных данных
+//Думаю, в будущем, вероятно, придёться сделать её асинхронной и заменить сканирование "в глубину" сканированием "в ширину"
+function currentSize(path){
+	var size = 0;
+	//Получаем (синхронно) объект статистики файла
+	var stat = fs.statSync(path);
+	//Если это файл, то сразу возвращаем текущий размер
+	if(stat.isFile()){
+		//В этой строчке высокого смысла нет, добавлена для прозрачности кода
+		size = stat.size;
+		return size;
+	}
+	//Если это каталог...
+	if(stat.isDirectory()){
+		//Читаем его синхронно
+		//Получили массив файлов
+		var innerContent = fs.readdirSync(path);
+		var length = innerContent.length;
+		for(var i = 0; i < length; i++){
+			size += currentSize(path + "/" + innerContent[i]);
+		}
+	}
+	
+	return size;
+}
+
 
 //Функция преобразования хэша.
 //Все бинарные данные в URL (в особенности info_hash и peer_id) должны быть правильно экранированы.
