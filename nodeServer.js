@@ -291,11 +291,9 @@ console.log(eval("'" + uni + "'"));*/
 //%b8  %1f  %2a  %fc  i  %d4  %27  %5e  %13  %14  7  %c7  %0e  %d3  %ff  %5d  %2f  Q  %b7  %a9 Хэш, который создаёт сервер.
 //%b8  %1F   *   %fc  i  %d4   '   %5E  %13  %14  7  %c7  %0E  %d3  %ff  %5D   /   Q  %b7  %a9
 
-
-
 //Получаем мтаинформацию о файле.
-readTorrentFile("D:/webRtcProj/files/BO2intro.torrent", function(a, data){
-//readTorrentFile("D:/webRtcProj/files/IMA-Sound.torrent", function(a, data){
+//readTorrentFile(serverRoot + "/files/ride.torrent", function(a, data){
+readTorrentFile(serverRoot + "/files/IMA-Sound.torrent", function(a, data){
 	var fileInfo = {};
 	//Список анонсеров в виде массива
 	fileInfo.announce = data.announce;
@@ -335,9 +333,9 @@ readTorrentFile("D:/webRtcProj/files/BO2intro.torrent", function(a, data){
 	
 	for(var i = 0; i < fileInfo.announce.length; i++){
 		if(fileInfo.announce[i].indexOf("?") !== -1)
-			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0&event=started";
+			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0";
 		else
-			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0&event=started";
+			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0";
 		
 		if(/^udp:/.test(fileInfo.announce[i])){
 			//requestUdp(url, fileInfo);
