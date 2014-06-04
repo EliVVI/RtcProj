@@ -324,6 +324,9 @@ readTorrentFile(torrentFile, function(a, data){
 	
 	console.log(currentLength);
 	
+	//Вычисляем размер оставшейся части
+	var sizeLeftToDownload = fileInfo.length - currentLength;
+	
 	var ajaxPool = [];
 
 	//fs.writeFile("D:/webRtcProj/files/ride.txt", JSON.stringify(data));
@@ -342,16 +345,25 @@ readTorrentFile(torrentFile, function(a, data){
 	};
 	ajaxPool[0].send();*/
 	
+	//Для корректной работы механизма отслеживания завершённых закачек необходима передача в запросе параметра left отличного о нуля.
+	//Нуль трактуется как "все файлы есть, ничего не надо, можно внести в список сидеров".
+	//Также стоит отметить что параметр event равный stopped ведёт к тому, что клиенту пересылается только общая статистика по пирам: сколько скачало полностью, столько ещё качает.
+	//При этом список пиров НЕ передаётся.
+	//Параметр event равный started порзволяет получить список пиров.
+	//ВНИМАНИЕ! В списке также возвращается ip ТЕКУЩЕГО клиента.
 	for(var i = 0; i < fileInfo.announce.length; i++){
 		if(fileInfo.announce[i].indexOf("?") !== -1)
-			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0";
+			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
 		else
-			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=0&compact=1&no_peer_id=0";
+			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
 		
 		if(/^udp:/.test(fileInfo.announce[i])){
 			//requestUdp(url, fileInfo);
 		}
 		if(/^http:/.test(fileInfo.announce[i])){
+			//Используется для генерации события stopped
+			if(false)
+				url = url + "&event=stopped";
 			requestHttp(url, fileInfo);
 		}
 	}
