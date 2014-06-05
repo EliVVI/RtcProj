@@ -97,6 +97,14 @@ function getUserSessionVariables(nodesessid){
 	return __clientsSessions[nodesessid];
 }
 
+//Возвращаем оффер по адресу и порту клиента
+function getOfferByAddressPort(addressport){
+	for(var nodesessid in __clientsSessions){
+		if(__clientsSessions[nodesessid]["ipport"] === addressport)
+			return __clientsSessions[nodesessid]["sdp"];
+	}
+}
+
 //Выделяем mime а заодно проверяем, поддерживаем его или нет
 function checkMime(path, mimesSupported){
 	var lastIndex = path.lastIndexOf(".");
@@ -251,6 +259,15 @@ io.sockets.on("connection", function(client){
 				break;
 			}
 		}
+	});
+	
+	//Получаем оффер по пришедшим адресу и порту
+	client.on('getOfferByAddressPort', function(msg){
+		var fullAddress = JSON.parse(msg);
+		//Находим оффер
+		var offer = getOfferByAddressPort(fullAddress);
+		//Отправляем его клиенту
+		client.emit("takeOfferByAddressPort", JSON.stringify(offer));
 	});
 	
 	//Посылаем ответ от ответчика
