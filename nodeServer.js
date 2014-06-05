@@ -156,10 +156,12 @@ var server = http.createServer(function(request, response){
 	//Получаем порт клиента
 	var clientPort = request.connection.remotePort;
 	//Сохраняем строку "адрес:порт" в сессии пользователя
-	__clientsSessions[userSessId]["ipport"] = clientIp + ":" + clientPort;
+	var fullAddress = clientIp + ":" + clientPort;
+	__clientsSessions[userSessId]["ipport"] = fullAddress;
 	
 	userCookie["NODESESSID"] = userSessId;
 	currentRequest = userCookie;
+	currentRequest["fulladdress"] = fullAddress;
 	
 	response.setHeader("Set-Cookie", makeCookieArray(userCookie));
 	
@@ -246,6 +248,18 @@ io.sockets.on("connection", function(client){
 				paramsSdp = __clientsSessions[nodeid]["sdp"];
 		}
 		io.sockets.emit("wantToConnect", JSON.stringify({clientid : params.remoteId, param : paramsSdp, from : params.me}));
+	});
+	
+	//Функция для обновления оффера
+	//Один оффер всегда должен оставаться активным, чтобы инициироваь им другой коннект
+	//Список передаваемых параметров не утверждён, поэтому путь это будет: оффер (поле offer передаваемого объекта) и текущий идентификатор клиента (curentnodeid) (поле clientId)
+	client.on('updateOffer', function(msg){
+		var dataObj = JSON.parse(msg);
+		for(var nodesesid in __clientsSessions){
+			if(__clientsSessions[nodesesid]["curentnodeid"] === dataObj.clientId)
+				if(__clientsSessions[nodesesid]["ipport"] === currentRequest["fulladdress"])
+					__clientsSessions[nodesesid]["sdp"] = dataObj.offer;
+		}
 	});
 	
 	//Дисконнект
