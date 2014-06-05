@@ -354,10 +354,23 @@ readTorrentFile(torrentFile, function(a, data){
 	//Параметр event равный started порзволяет получить список пиров.
 	//ВНИМАНИЕ! В списке также возвращается ip ТЕКУЩЕГО клиента.
 	for(var i = 0; i < fileInfo.announce.length; i++){
+		var params = {
+			info_hash : infoHashTransform(fileInfo.infoHash),
+			peer_id : encodeURI("-UT2000-1234567890AB"),
+			port : 5251,
+			key : "E9FD577A",
+			uploaded : 0,
+			downloaded : 0,
+			left : sizeLeftToDownload,
+			compact : 1,
+			no_peer_id : 0,
+			event : "started"
+		};
+		
 		if(fileInfo.announce[i].indexOf("?") !== -1)
-			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0&event=started";
+			var url = fileInfo.announce[i] + "&" + createQueryString(params);
 		else
-			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0&event=started";
+			var url = fileInfo.announce[i] + "?" + createQueryString(params);
 		
 		if(/^udp:/.test(fileInfo.announce[i])){
 			//requestUdp(url, fileInfo);
@@ -375,8 +388,19 @@ readTorrentFile(torrentFile, function(a, data){
 	setInterval(function(){
 		var currentLength = currentSize(file);
 		var sizeLeftToDownload = fileInfo.length - currentLength;
+		var params = {
+			info_hash : infoHashTransform(fileInfo.infoHash),
+			peer_id : encodeURI("-UT2000-1234567890AB"),
+			port : 5251,
+			key : "E9FD577A",
+			uploaded : 0,
+			downloaded : 0,
+			left : sizeLeftToDownload,
+			compact : 1,
+			no_peer_id : 0,
+		};
 		console.log(currentLength);
-		var url = remoteHost + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
+		var url = remoteHost + "?" + createQueryString(params);
 		requestHttp(url, fileInfo);
 	}, 5000);
 });
@@ -385,6 +409,22 @@ readTorrentFile(torrentFile, function(a, data){
 //
 // HELPERS
 //
+
+//Функция создания строки запроса. Принимает объект. Ключи объекта - параметры строки.
+function createQueryString(params){
+	var query = "";
+	//Если массив параметров не определён. то просто возвращаем пустую строку.
+	if(params === "undefined")
+		return query;
+	var pairsArray = [];
+	for(var i in params){
+		//"Пушим" пару "параметр-значение" в массив.
+		pairsArray.push(i + "=" + params[i]);
+	}
+	query = pairsArray.join("&");
+	
+	return query;
+}
 
 
 //Рекурсивная функция для получения текущего объёма загруженных данных
