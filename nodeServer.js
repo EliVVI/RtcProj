@@ -142,8 +142,13 @@ var server = http.createServer(function(request, response){
 	
 	var userSessId = initUserSession(request);
 	var userCookie = getUserCookie(request);
+	
 	//Получаем ip клиента
-	__clientsSessions[userSessId]["ip"] = request.connection.remoteAddress;
+	var clientIp = request.connection.remoteAddress;
+	//Получаем порт клиента
+	var clientPort = request.connection.remotePort;
+	//Сохраняем строку "адрес:порт" в сессии пользователя
+	__clientsSessions[userSessId]["ipport"] = clientIp + ":" + clientPort;
 	
 	userCookie["NODESESSID"] = userSessId;
 	currentRequest = userCookie;
@@ -353,7 +358,7 @@ readTorrentFile(torrentFile, function(a, data){
 	//При этом список пиров НЕ передаётся.
 	//Параметр event равный started порзволяет получить список пиров.
 	//ВНИМАНИЕ! В списке также возвращается ip ТЕКУЩЕГО клиента.
-	for(var i = 0; i < fileInfo.announce.length; i++){
+	/*for(var i = 0; i < fileInfo.announce.length; i++){
 		var params = {
 			info_hash : infoHashTransform(fileInfo.infoHash),
 			peer_id : encodeURI("-UT2000-1234567890AB"),
@@ -402,7 +407,7 @@ readTorrentFile(torrentFile, function(a, data){
 		console.log(currentLength);
 		var url = remoteHost + "?" + createQueryString(params);
 		requestHttp(url, fileInfo);
-	}, 5000);
+	}, 5000);*/
 });
 
 
