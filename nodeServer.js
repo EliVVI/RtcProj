@@ -328,7 +328,9 @@ readTorrentFile(torrentFile, function(a, data){
 	var sizeLeftToDownload = fileInfo.length - currentLength;
 	
 	var ajaxPool = [];
-
+	
+	var remoteHost = "";
+	
 	//fs.writeFile("D:/webRtcProj/files/ride.txt", JSON.stringify(data));
 	
 	/*ajaxPool.push(new xmlHttpRequest());
@@ -353,20 +355,30 @@ readTorrentFile(torrentFile, function(a, data){
 	//ВНИМАНИЕ! В списке также возвращается ip ТЕКУЩЕГО клиента.
 	for(var i = 0; i < fileInfo.announce.length; i++){
 		if(fileInfo.announce[i].indexOf("?") !== -1)
-			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
+			var url = fileInfo.announce[i] + "&" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0&event=started";
 		else
-			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
+			var url = fileInfo.announce[i] + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0&event=started";
 		
 		if(/^udp:/.test(fileInfo.announce[i])){
 			//requestUdp(url, fileInfo);
 		}
 		if(/^http:/.test(fileInfo.announce[i])){
+			remoteHost = fileInfo.announce[i];
 			//Используется для генерации события stopped
 			if(false)
 				url = url + "&event=stopped";
 			requestHttp(url, fileInfo);
 		}
 	}
+	
+	//Выводим список пиров в онлайн режиме
+	setInterval(function(){
+		var currentLength = currentSize(file);
+		var sizeLeftToDownload = fileInfo.length - currentLength;
+		console.log(currentLength);
+		var url = remoteHost + "?" + "info_hash=" + infoHashTransform(fileInfo.infoHash) + "&peer_id=-UT2000-1234567890AB&port=5251&key=E9FD577A&uploaded=0&downloaded=0&left=" + sizeLeftToDownload + "&compact=1&no_peer_id=0";
+		requestHttp(url, fileInfo);
+	}, 5000);
 });
 
 
