@@ -327,11 +327,11 @@ console.log(eval("'" + uni + "'"));*/
 //%b8  %1f  %2a  %fc  i  %d4  %27  %5e  %13  %14  7  %c7  %0e  %d3  %ff  %5d  %2f  Q  %b7  %a9 Хэш, который создаёт сервер.
 //%b8  %1F   *   %fc  i  %d4   '   %5E  %13  %14  7  %c7  %0E  %d3  %ff  %5D   /   Q  %b7  %a9
 
-var torrentFile = serverRoot + "/files/IMA-Sound.torrent";
+//var torrentFile = serverRoot + "/files/IMA-Sound.torrent";
 //var torrentFile = serverRoot + "/files/ride.torrent";
 
 //Получаем метаинформацию о файле.
-readTorrentFile(torrentFile, function(a, data){
+/*readTorrentFile(torrentFile, function(a, data){
 	var fileInfo = {};
 	//Список анонсеров в виде массива
 	fileInfo.announce = data.announce;
@@ -365,7 +365,7 @@ readTorrentFile(torrentFile, function(a, data){
 	
 	var ajaxPool = [];
 	
-	var remoteHost = "";
+	var remoteHost = "";*/
 	
 	//fs.writeFile("D:/webRtcProj/files/ride.txt", JSON.stringify(data));
 	
@@ -439,7 +439,7 @@ readTorrentFile(torrentFile, function(a, data){
 		var url = remoteHost + "?" + createQueryString(params);
 		requestHttp(url, fileInfo);
 	}, 5000);*/
-});
+//});
 
 
 //
